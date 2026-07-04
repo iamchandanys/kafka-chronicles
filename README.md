@@ -69,3 +69,32 @@ At low-to-moderate volume, SQS/Service Bus is almost always **cheaper and simple
 Ask **"does more than one independent system need to read this same event, possibly replaying old history?"**
 - **Yes** → Kafka (activity streams, CDC, audit logs, anything feeding multiple analytics/ML systems).
 - **No, it's a single task that needs to happen reliably once** → SQS/Service Bus (emails, job processing, API decoupling).
+
+## `docker-compose.yaml` environment variables (in simple words)
+
+### Shared by controllers & brokers
+
+| Variable | In simple words |
+|---|---|
+| `KAFKA_NODE_ID` | A unique ID number for this node. No two nodes in the whole cluster — controller or broker — can share one. It's just how the cluster tells nodes apart. |
+| `KAFKA_PROCESS_ROLES` | What job this node does: `controller` (manages the cluster, elects leaders) or `broker` (stores and serves the actual messages). |
+| `KAFKA_CONTROLLER_LISTENER_NAMES` | Tells this node which listener name carries controller traffic — here, the one named `CONTROLLER`. |
+| `KAFKA_CONTROLLER_QUORUM_VOTERS` | The fixed list of all 3 controllers and how to reach each one (`id@host:port`). Every node — controller or broker — is given this exact same list so everyone agrees on who's in charge. |
+| `KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS` | How long to wait before organizing consumers into a group when they first connect. `0` = don't wait, start immediately — fine for local dev, but production often keeps a short delay so several consumers starting at once don't trigger repeated rebalances. |
+| `KAFKA_INTER_BROKER_LISTENER_NAME` | Which listener door brokers use to talk to each other. It's set on controllers too, but has no effect there since controllers don't move message data. |
+
+### Broker-only
+
+| Variable | In simple words |
+|---|---|
+| `KAFKA_LISTENERS` | Which doors (ports) this broker opens, inside the container. Here: `INTERNAL` (port `19092`, Docker-internal traffic only) and `EXTERNAL` (port `9092`, traffic coming from your host machine). |
+| `KAFKA_ADVERTISED_LISTENERS` | What address this broker hands back to whoever just connected, depending on which door they knocked on. Other brokers are told `broker-N:19092`; your host machine is told `localhost:<mapped-port>` (e.g. `29092` for `broker-1`). |
+| `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP` | What security protocol each door speaks. All three doors here (`CONTROLLER`, `INTERNAL`, `EXTERNAL`) use `PLAINTEXT` — no encryption, no authentication. Fine for local dev, not for production. |
+
+### `kafka-ui` only
+
+| Variable | In simple words |
+|---|---|
+| `KAFKA_CLUSTERS_0_NAME` | Just a display name for this cluster, shown in the Kafka UI dashboard. Purely cosmetic. |
+| `KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS` | Which broker addresses the UI should connect to first, to discover the rest of the cluster. Uses the `INTERNAL` addresses (`broker-1:19092`, etc.) since `kafka-ui` runs as a container inside the same Docker network, not from your host machine. |
+| `DYNAMIC_CONFIG_ENABLED` | Lets you add/edit Kafka cluster connections from inside the UI itself at runtime, instead of only being able to set them via environment variables at startup. |
