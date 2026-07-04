@@ -96,3 +96,17 @@ services:
       - controller-1
       - controller-2
       - controller-3
+
+  kafka-ui:
+    image: kafbat/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - 8080:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafka-chronicles
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092,broker-2:19092,broker-3:19092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
