@@ -7,7 +7,7 @@ from confluent_kafka import Producer
 
 class Orders:
     def __init__(self):
-        self.producer = Producer({'bootstrap.servers': "localhost:9092"})
+        self.producer = Producer({'bootstrap.servers': "localhost:29092,localhost:39092,localhost:49092"})
 
     def delivery_report(self, err, msg):
         if err is not None:
